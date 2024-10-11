@@ -2,94 +2,70 @@
 title: "yc4384_P8122_HW3"
 author: "yc4384_Yangyang_Chen"
 date: "`r Sys.Date()`"
-output: pdf_document
+output: 
+  pdf_document:
+      latex_engine: xelatex
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Preparing mice data
+Data Preparation for Mice Study
 ```{r}
 set.seed(124)
-n = 16  
-p_C = 1/5  
-C = rbinom(n, 1, p_C)
-theta0 = 1/2  
-theta1 = -1/5  
-p_A = theta0 + theta1 * C
-A = rbinom(n, 1, p_A)  
-beta0 = 110  
-beta1 = 20  
-beta2 = 5 
+n_mice = 16  
+p_obesity = 1/5  
+obesity = rbinom(n_mice, 1, p_obesity)
+theta_0 = 1/2  
+theta_1 = -1/5  
+p_light = theta_0 + theta_1 * obesity
+light_exp = rbinom(n_mice, 1, p_light)  
+beta_0 = 110  
+beta_1 = 20  
+beta_2 = -5 
 sigma_Y = 1  
-mu_Y = beta0 + beta1 * C + beta2 * A  
-Y = rnorm(n, mu_Y, sigma_Y) 
+mu_glucose = beta_0 + beta_1 * obesity + beta_2 * light_exp  
+glucose = rnorm(n_mice, mu_glucose, sigma_Y) 
 
 mice_data = data.frame(
-  mouse_id = 1:n,
-  obesity = C,
-  light_exposure = A,
-  glucose = Y
+  mouse_id = 1:n_mice,
+  obesity = obesity,
+  light_exposure = light_exp,
+  glucose = glucose
 )
 
-head(mice_data)
+mice_data |> head()
 ```
 
 ## Problem 1: Interpretation of parameters:
 
-$p$: The baseline covariate $C$ (obesity) follows Bernoulli distribution, where p represents the probability of $C = 1$ (with obesity).
+$p$: Probability that the baseline covariate C (obesity) equals 1, indicating the mouse is obese (Bernoulli distribution).
 
-$\theta_0$: The probability of assigning the units to treatment group (light) if the units are not with obesity $(C = 0)$.
+$\theta_0$: Probability of assigning mice to light exposure when not obese $(C = 0)$.
 
-$\theta_1$: The probability of assigning the units with obesity to treatment group (light) is 1/5 times lower than the units without obesity on average.
+$\theta_1$: Probability of assigning obese mice to light exposure is reduced by 1/5 compared to non-obese mice.
 
-$\beta_0$: The mean of baseline glucose when the mice are non-obese and unexposed to light.
+$\beta_0$: Average baseline glucose level when the mouse is not obese and unexposed to light.
 
-$\beta_1$: Intervening to increase $C$ (obesity) by one unit will, on average, increase the outcome $Y$ (glucose) by 20 units, holding other coviariates constants.	
+$\beta_1$:  A unit increase in obesity results in an average increase of 20 units in glucose levels, holding other factors constant.
 
-$\beta_2$: Intervening to increase $A$ (light) by one unit will, on average, decrease the outcome $Y$ (glucose) by 5 units, holding other coviariates constants.	
+$\beta_2$: Exposure to light reduces glucose levels by 5 units on average, holding other factors constant.
 
 
 ## Problem 2: Marginal and Conditional PACE
 
-Since
-$P(C = 1) = \frac{1}{5}$
-
-and
-$E[Y \mid A, C] = \beta_0 + \beta_1 C + \beta_2 A = 110 + 20C - 5A$
-
 The Marginal PACE is:
 
-$E[Y_1] - E[Y_0]$
+$$
+E[Y_1] - E[Y_0] = \sum E[Y | A = 1, C = c] P(C = c) - \sum E[Y | A = 0, C = c] P(C = c)
+$$
 
-$= \sum E[Y \mid A = 1, C = c] \cdot P(C = c) - \sum E[Y \mid A = 0, C = c] \cdot P(C = c)$
+The Conditional PACE is:
 
-
-$= E[Y \mid A = 1, C = 1] \cdot P(C = 1) + E[Y \mid A = 1, C = 0] \cdot (1 - P(C = 1))$
-
-$- [ E[Y \mid A = 0, C = 1] \cdot P(C = 1) + E[Y \mid A = 0, C = 0] \cdot (1 - P(C = 1))]$
-
-$= (\beta_0 + \beta_1 + \beta_2) \cdot P(C = 1) + (\beta_0 + \beta_2) \cdot (1 - P(C = 1)) - [ (\beta_0 + \beta_1) \cdot P(C = 1) + \beta_0 \cdot (1 - P(C = 1))]$
-
-$= (\beta_0 + \beta_1 + \beta_2) \cdot P(C = 1) + (\beta_0 + \beta_2) \cdot (1 - P(C = 1)) - \left[(\beta_0 + \beta_1) \cdot P(C = 1) + \beta_0 \cdot (1 - P(C = 1)) \right]$
-
-$= \beta_2$
-
-$= -5$
-
-
-Similarly, the conditional PACE is:
-
-$E[Y_1 \mid C = c] - E[Y_0 \mid C = c]$ 
-
-$= E[Y \mid A = 1, C = c] - E[Y \mid A = 0, C = c]$
-
-$= (\beta_0 + \beta_1 \cdot C + \beta_2) - (\beta_0 + \beta_1 \cdot C)$
-
-$= \beta_2$
-
-$= -5$
+$$
+E[Y_1 | C = c] - E[Y_0 | C = c] = \beta_2 = -5
+$$
 
 I. Under the following assumptions Marginal PACE can be identified:
 
@@ -97,19 +73,18 @@ I. Under the following assumptions Marginal PACE can be identified:
 $$
    Y = Y_1 \text{ if treated, and } Y = Y_0 \text{ if not treated}.
 $$
-The observed outcome is equal to the potential outcome for the treatment received.
 
 2) Exchangeability: 
 $$
-   Y_1, Y_0 \perp A \mid X.
+   Y_1, Y_0 \perp A | X.
 $$
-Conditional on covariates \(X\), treatment assignment is independent of the potential outcomes.
 
 3) Positivity: 
 $$
    0 < P(A = 1 | X) < 1.
 $$
-There must be a positive probability of receiving each treatment level for all values of covariates.
+
+4) SUTVA: No interference between units, and the treatment is well-defined for all units.
 
 II. Under the following assumptions Conditional PACE can be identified:
 
@@ -117,56 +92,117 @@ II. Under the following assumptions Conditional PACE can be identified:
 $$
    Y = Y_1 \text{ if } A = 1, \quad Y = Y_0 \text{ if } A = 0, \quad \text{given } X.
 $$
-Similar to marginal consistency, but conditional on \(X\).
 
 2) Conditional Exchangeability:
 $$
-   Y_1, Y_0 \perp A \mid X = x.
+   Y_1, Y_0 \perp A | X = x.
 $$
-The treatment assignment is independent of the potential outcomes, conditional on covariates \(X\).
    
 3) Conditional Positivity:
 $$
-   0 < P(A = 1 \mid X = x) < 1.
+   0 < P(A = 1 | X = x) < 1.
 $$
-Within each level of \(X\), there must be a positive probability of receiving both the treatment and control.
+
+4) SUTVA: No interference between units, and the treatment is well-defined for all units.
 
 ## Problem 3: G-formula for Randomized and Observational Studies
 
-I. In a randomized study, the treatment assignment $A \perp C$. Therefore:
+g-formula for the randomized study:  $\sum_c E[Y | A = 1, C = c] Pr(C = c) - \sum_c E[Y | A = 0, C = c] Pr(C = c)=E[Y|A=1]-E[Y|A=0]$  
 
-$E[Y_a]$
+g-formula for the observational study: $\sum_c E[Y |A=1, C = c] Pr(C = c)-\sum_c E[Y |A=0, C = c] Pr(C = c)$ under NUCA.  
 
-$= \sum E[Y \mid A = a, C = c] \cdot P(C = c)$
+Randomization ensures unconfoundedness, meaning that the distribution of C is independent of  A  (the treatment assignment). As a result, the g-formula simplifies to  $E[Y|A=1] - E[Y|A=0]$ , as no adjustment for confounders is necessary. However, in an observational study,  A  is influenced by  C , meaning that the relationship between the treatment and outcome is confounded. In such cases, the g-formula cannot be simplified without appropriately accounting for the confounders. 
 
-$= E[Y \mid A = a]$
+## Problem4: Estimate and confidence interval of $E[Y|A=1]-E[Y|A=0]$
 
-Thus, 
-$E[Y_1] = E[Y \mid A = 1]$
+The 95% confidence interval can be calculated by $E[Y|A=1]-E[Y|A=0] \pm z \sqrt{\frac{S_1^2}{N_1} + \frac{S_0^2}{N_0}}$, where $z$ is the critical value from the standard normal distribution, $S_1^2$ and $S_0^2$ are the variances of the potential outcomes in $A=1$ and $A=0$ groups, and $N_1$ and $N_0$ are the sizes of $A=1$ and $A=0$ groups:
+```{r}
+# Split Y into treatment and control groups
+Y_1 = glucose[light_exp == 1]
+Y_0 = glucose[light_exp == 0]
 
-and
-$E[Y_0] = E[Y \mid A = 0]$
+# Use pipeline to compute mean glucose levels and causal effect estimate
+mean_Y_1 = Y_1 |> mean()
+mean_Y_0 = Y_0 |> mean()
 
-II. In an observational study, treatment assignment $A$ is not independent of the covariates $C$. As a result, we need to adjust for the distribution of covariates:
+# Causal effect estimate
+diff_estimate = mean_Y_1 - mean_Y_0
 
-$E[Y_a]$ 
+# Critical value for 95% CI
+z_crit = qnorm(1 - 0.05 / 2)
 
-$= \sum E[Y \mid A = a, C = c] \cdot P(C = c)$
+# Variances and sample sizes
+var_Y_1 = Y_1 |> var()
+var_Y_0 = Y_0 |> var()
+n_1 = Y_1 |> length()
+n_0 = Y_0 |> length()
 
-where
+# Standard error
+se_diff = (var_Y_1/n_1 + var_Y_0/n_0) |> sqrt()
 
-$E[Y_1]$ 
+# Confidence interval
+ci_lower = diff_estimate - z_crit * se_diff
+ci_upper = diff_estimate + z_crit * se_diff
+```
+Therefore,  the estimate of causal effect is $E[Y|A=1]-E[Y|A=0]=$ `r round(diff_estimate,2)`. The 95% confidence interval is (`r list(round(ci_lower, 2), round(ci_upper, 2))`), which excludes zero, indicating a causal effect between the bright and dark light groups in obesity. Therefore, the result is statistically significant at the 95% confidence level.
 
-$= \sum E[Y \mid A = 1, C = c] \cdot P(C = c)$
+Additionally, the point estimate suggests that, on average, the outcome $Y$ is `r round(-diff_estimate,2)` mg/dL lower in bright light group compared to dark light group.
 
-$= E[Y \mid A = 1, C = 1] \cdot P(C = 1) + E[Y \mid A = 1, C = 0] \cdot (1 - P(C = 1))$
+## 5. Estimate and confidence interval of $E[Y_1]-E[Y_0]$
+The difference $E[Y_1]- E[Y_0]$  is calculated using the g-formula from Problem 3:
+$E[Y_1]- E[Y_0]=\sum_c E[Y |A=1, C = c] Pr(C = c)-\sum_c E[Y |A=0, C = c] Pr(C = c)$
 
-and
+```{r}
+p_C0 = obesity |> mean()
+p_C1 = 1 - p_C0
 
-$E[Y(0)]$
+# Mean outcomes for different combinations of A and C
+mean_Y_0_0 = glucose[light_exp == 0 & obesity == 0] |> mean()
+mean_Y_0_1 = glucose[light_exp == 0 & obesity == 1] |> mean()
+mean_Y_1_0 = glucose[light_exp == 1 & obesity == 0] |> mean()
+mean_Y_1_1 = glucose[light_exp == 1 & obesity == 1] |> mean()
+```
 
-$= \sum E[Y \mid A = 0, C = c] \cdot P(C = c)$
+Upon noticing that no obese mice were assigned to the bright light group, this violates the probabilistic assumption. Therefore, we will exclude the obese mice and consider only the non-obese group.
 
-$E[Y \mid A = 0, C = 1] \cdot P(C = 1) + E[Y \mid A = 0, C = 0] \cdot (1 - P(C = 1))$
+```{r}
+# g-formula estimates
+E_Y1 = p_C0 * mean_Y_1_0
+E_Y0 = p_C0 * mean_Y_0_0
 
-Thus, the key difference between the two studies is how the treatment assignment interacts with the covariates, which affects the application of the g-formula.
+# Difference E[Y1] - E[Y0]
+diff = E_Y1 - E_Y0
+```
+
+Therefore, $E[Y_1]- E[Y_0]=$ `r round(diff, 2)`
+
+```{r}
+# Critical value for 95% CI
+z = qnorm(1 - 0.05 / 2)
+
+# Sample sizes for A=1 and A=0, C=0
+n_1_0 = sum(light_exp == 1 & obesity == 0)
+n_0_0 = sum(light_exp == 0 & obesity == 0)
+
+# Variances for A=1 and A=0, C=0
+var_Y_1_0 = glucose[light_exp == 1 & obesity == 0] |> var()
+var_Y_0_0 = glucose[light_exp == 0 & obesity == 0] |> var()
+
+# Standard error
+se_diff = (var_Y_1_0 / n_1_0 + var_Y_0_0 / n_0_0) |> sqrt()
+
+# Confidence interval
+ci_lower = diff - z * se_diff
+ci_upper = diff + z * se_diff
+```
+
+The 95% confidence interval is (`r list(round(ci_lower, 2), round(ci_upper, 2))`).  
+
+The point estimate indicates that, on average, the outcome $Y$ is `r round(-diff,2)` mg/dL  higher in the bright light group compared to the dark light group among non-obese mice in this observational study. However, due to the violation of probabilistic assumptions, we cannot infer the causal effect for obese mice. Since the 95% confidence interval includes zero, the point estimate is not statistically significant at the 95% confidence level.
+
+The difference between the point estimates in Problems (4) and (5) arises because Problem (5) accounts for the adjustment of confounding bias.
+
+# 6. Assumptions of estimate $E[Y_1]−E[Y_0]$ using linear regression with continuous covariates
+In addition to consistency, SUTVA, exchangeability, positivity, and NUCA assumption, we need to assume the following:  
+- No measurement error: All variables need to be correctly measured.
+- No model misspecification: All models need to be correctly specified. In the linear regression, the relationship between $Y$, $A$, and covariates should be adequately approximated by a linear model.
